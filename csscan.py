@@ -72,10 +72,7 @@ def parse_dat(datfile):
     return games
 
 
-def read_zips(rompaths):
-    roms = {}
-    files = {}
-
+def read_zip_dir(rompaths, roms, files):
     for zippath in rompaths:
         zipname = os.path.basename(os.path.splitext(zippath)[0])
         files[zipname] = {}
@@ -97,6 +94,13 @@ def read_zips(rompaths):
                         roms[hash] = {'name': zipname, 'path': zippath, 'file': rominfo.filename}
             except:
                 pass
+
+    return roms, files
+
+
+def read_zips(rompaths, addpaths):
+    roms, files = read_zip_dir(rompaths, {}, {})
+    roms, _ = read_zip_dir(addpaths, roms, {})
 
     return roms, files
 
@@ -162,17 +166,22 @@ def find_missing(games, files, roms):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("rompath", help="Path to romfiles to scan", type=list_dir)
-    parser.add_argument("-d", "--datpath", help="Path to datfile to read", default=stdin, type=argparse.FileType('r'))
+    parser.add_argument("-a", "--addpath", help="Path to add to rom search",
+                        type=list_dir, action='append', default=[])
+    parser.add_argument("-d", "--datpath", help="Path to datfile to read",
+                        default=stdin, type=argparse.FileType('r'))
     parser.add_argument("-u", "--unmerged", help="Set to scan is unmerged", action='store_true')
     parser.add_argument("-v", "--verbose", help="Verbose logging to stderr", action='store_true')
     args = parser.parse_args()
+
+    addpath = [j for i in args.addpath for j in i]
 
     games = parse_dat(args.datpath)
 
     if args.verbose:
         debug_print("Parsing DAT complete")
 
-    roms, files = read_zips(args.rompath)
+    roms, files = read_zips(args.rompath, addpath)
 
     if args.verbose:
         debug_print("Reading romfiles complete")
